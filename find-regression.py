@@ -23,7 +23,7 @@ def parse_commit_from_link(link: str) -> str:
     name = link.split('/')[-1].removesuffix(SUFFIX).removesuffix('-macosintel')
     raw_commit = name.split('-')[-1]
     # Slightly hacky, we rely on the fact that commit hashes are no longer than 10
-    # characters to strip out the 'g' that the commit revision in newer Mixxx downloads
+    # characters to strip out the 'g' that the commit revisions in newer Mixxx downloads
     # begin with.
     return raw_commit[-10:]
 
