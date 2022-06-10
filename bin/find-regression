@@ -33,7 +33,10 @@ def fetch_snapshots() -> dict[str, str]:
     return {parse_commit_from_link(link): link for link in links if link.endswith(SUFFIX)}
 
 def clone_mixxx():
-    if not MIXXX_DIR.exists():
+    if MIXXX_DIR.exists():
+        print('==> Fetching Mixxx...')
+        subprocess.run(['git', 'fetch', 'origin'], cwd=MIXXX_DIR)
+    else:
         print('==> Cloning Mixxx...')
         subprocess.run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)], cwd=BASE_DIR)
 
@@ -68,6 +71,10 @@ def main():
 
     snapshots = fetch_snapshots()
     commits = sort_commits(list(snapshots.keys()))
+
+    if not commits:
+        print('No snapshot commits found')
+        sys.exit(1)
 
     good = parse_commit(args.good or commits[0])
     bad = parse_commit(args.bad or commits[-1])
