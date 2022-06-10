@@ -10,11 +10,13 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 
 SNAPSHOTS_URL = 'https://downloads.mixxx.org/snapshots/main/'
-SUFFIX = '.dmg'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
+MOUNT_DIR = BASE_DIR / 'mnt'
 DOWNLOADS_DIR = BASE_DIR / 'downloads'
+DOWNLOAD_PATH = DOWNLOADS_DIR / f'mixxx-current.dmg'
+CDR_PATH = DOWNLOADS_DIR / f'mixxx-current.cdr'
 
 SNAPSHOT_NAME_PATTERNS = [
     # Old pattern, e.g. mixxx-main-r7715-a0f80e8464
@@ -22,24 +24,6 @@ SNAPSHOT_NAME_PATTERNS = [
     # New pattern, e.g. mixxx-2.4-alpha-6370-g44f29763ed-macosintel
     re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
 ]
-
-def get_soup(url: str) -> BeautifulSoup:
-    headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
-    response = requests.get(url, headers=headers)
-    return BeautifulSoup(response.content, 'html.parser')
-
-def parse_commit_from_name(name: str) -> str:
-    name = name.removesuffix(SUFFIX)
-    for pattern in SNAPSHOT_NAME_PATTERNS:
-        matches = pattern.search(name)
-        if matches:
-            return matches[1]
-    raise ValueError(f"Could not parse name '{name}'")
-
-def fetch_snapshots() -> dict[str, str]:
-    snapshot_soup = get_soup(SNAPSHOTS_URL)
-    links = [a.get('href') for a in snapshot_soup.select('a')]
-    return {parse_commit_from_name(link.split('/')[-1]): link for link in links if link.endswith(SUFFIX)}
 
 def clone_mixxx():
     if MIXXX_DIR.exists():
@@ -68,6 +52,48 @@ def describe_commit(rev: str) -> str:
 def commits_in_order(commits: list[str]) -> bool:
     return commits == sort_commits(commits)
 
+def get_soup(url: str) -> BeautifulSoup:
+    headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
+    response = requests.get(url, headers=headers)
+    return BeautifulSoup(response.content, 'html.parser')
+
+def parse_commit_from_name(name: str) -> str:
+    name = name.removesuffix('.dmg')
+    for pattern in SNAPSHOT_NAME_PATTERNS:
+        matches = pattern.search(name)
+        if matches:
+            return matches[1]
+    raise ValueError(f"Could not parse name '{name}'")
+
+def fetch_snapshots() -> dict[str, str]:
+    snapshot_soup = get_soup(SNAPSHOTS_URL)
+    links = [a.get('href') for a in snapshot_soup.select('a')]
+    return {parse_commit(parse_commit_from_name(link.split('/')[-1])): link for link in links if link.endswith('.dmg')}
+
+def download_snapshot(link: str):
+    print('Downloading snapshot...')
+    response = requests.get(f'{SNAPSHOTS_URL}/{link}')
+    with open(DOWNLOAD_PATH, 'wb') as f:
+        f.write(response.content)
+
+def mount_snapshot():
+    print('Mounting snapshot...')
+    subprocess.run(['hdiutil', 'convert', str(DOWNLOAD_PATH), '-format', 'UDTO', '-o', str(CDR_PATH)], cwd=BASE_DIR)
+    subprocess.run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_PATH)], cwd=BASE_DIR)
+
+def run_snapshot():
+    print('Running snapshot...')
+    subprocess.run([str(MOUNT_PATH / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+
+def unmount_snapshot():
+    print('Unmounting snapshot...')
+    subprocess.run(['hdiutil', 'unmount', str(MOUNT_PATH)], cwd=BASE_DIR)
+
+def delete_snapshot():
+    print('Deleting snapshot...')
+    DOWNLOAD_PATH.unlink()
+    CDR_PATH.unlink()
+
 def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
@@ -76,7 +102,9 @@ def main():
     args = parser.parse_args()
 
     clone_mixxx()
-    DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+    for dir in [DOWNLOADS_DIR, MOUNT_DIR]:
+        dir.mkdir(parents=True, exist_ok=True)
 
     snapshots = fetch_snapshots()
     commits = sort_commits(list(snapshots.keys()))
@@ -110,7 +138,11 @@ def main():
         mid = commits[mid_idx]
 
         print(f'==> Checking {describe_commit(mid)}')
-        # TODO: Download snapshot to DOWNLOADS_DIR and mount disk image
+        download_snapshot(snapshots[mid])
+        mount_snapshot()
+        run_snapshot()
+        unmount_snapshot()
+        delete_snapshot()
 
         answer = ''
         while not answer or answer not in 'yn':
