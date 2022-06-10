@@ -42,7 +42,15 @@ def sort_commits(commits: list[str]) -> list[str]:
 
 def parse_commit(rev: str) -> str:
     raw = subprocess.run(['git', 'rev-parse', rev], cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
-    return raw.splitlines()[0]
+    return raw.strip()
+
+def show_commit(rev: str, format: str) -> str:
+    raw = subprocess.run(['git', 'show', '-s', f'--format={format}', rev], cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
+    return raw.strip()
+
+def describe_commit(rev: str) -> str:
+    commit = parse_commit(rev)
+    return f"{commit[:10]} from {show_commit(rev, '%ci')} ({show_commit(rev, '%s')})"
 
 def commits_in_order(commits: list[str]) -> bool:
     return commits == sort_commits(commits)
@@ -83,7 +91,7 @@ def main():
         mid_idx = (bad_idx + good_idx) // 2
         mid = commits[mid_idx]
 
-        print(f'==> Checking {mid}')
+        print(f'==> Checking {describe_commit(mid)}')
         # TODO
 
         answer = ''
@@ -95,8 +103,8 @@ def main():
         else:
             bad_idx = mid_idx
 
-    print(f'Last good: {commits[good_idx]}')
-    print(f'First bad: {commits[bad_idx]}')
+    print(f'Last good: {describe_commit(commits[good_idx])}')
+    print(f'First bad: {describe_commit(commits[bad_idx])}')
 
 if __name__ == '__main__':
     main()
