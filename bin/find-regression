@@ -79,15 +79,15 @@ def download_snapshot(link: str):
 def mount_snapshot():
     print('Mounting snapshot...')
     subprocess.run(['hdiutil', 'convert', str(DOWNLOAD_PATH), '-format', 'UDTO', '-o', str(CDR_PATH)], cwd=BASE_DIR)
-    subprocess.run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_PATH)], cwd=BASE_DIR)
+    subprocess.run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_DIR)], cwd=BASE_DIR)
 
 def run_snapshot():
     print('Running snapshot...')
-    subprocess.run([str(MOUNT_PATH / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+    subprocess.run([str(MOUNT_DIR / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
 
 def unmount_snapshot():
     print('Unmounting snapshot...')
-    subprocess.run(['hdiutil', 'unmount', str(MOUNT_PATH)], cwd=BASE_DIR)
+    subprocess.run(['hdiutil', 'unmount', str(MOUNT_DIR)], cwd=BASE_DIR)
 
 def delete_snapshot():
     print('Deleting snapshot...')
