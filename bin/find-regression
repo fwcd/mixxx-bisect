@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import re
 import requests
 import subprocess
 import sys
@@ -10,27 +11,35 @@ from pathlib import Path
 
 SNAPSHOTS_URL = 'https://downloads.mixxx.org/snapshots/main/'
 SUFFIX = '.dmg'
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
 DOWNLOADS_DIR = BASE_DIR / 'downloads'
+
+SNAPSHOT_NAME_PATTERNS = [
+    # Old pattern, e.g. mixxx-main-r7715-a0f80e8464
+    re.compile(r'^mixxx-\w+-r\d+-(\w+)$'),
+    # New pattern, e.g. mixxx-2.4-alpha-6370-g44f29763ed-macosintel
+    re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
+]
 
 def get_soup(url: str) -> BeautifulSoup:
     headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
     response = requests.get(url, headers=headers)
     return BeautifulSoup(response.content, 'html.parser')
 
-def parse_commit_from_link(link: str) -> str:
-    name = link.split('/')[-1].removesuffix(SUFFIX).removesuffix('-macosintel')
-    raw_commit = name.split('-')[-1]
-    # Slightly hacky, we rely on the fact that commit hashes are no longer than 10
-    # characters to strip out the 'g' that the commit revisions in newer Mixxx downloads
-    # begin with.
-    return raw_commit[-10:]
+def parse_commit_from_name(name: str) -> str:
+    name = name.removesuffix(SUFFIX)
+    for pattern in SNAPSHOT_NAME_PATTERNS:
+        matches = pattern.search(name)
+        if matches:
+            return matches[1]
+    raise ValueError(f"Could not parse name '{name}'")
 
 def fetch_snapshots() -> dict[str, str]:
     snapshot_soup = get_soup(SNAPSHOTS_URL)
     links = [a.get('href') for a in snapshot_soup.select('a')]
-    return {parse_commit_from_link(link): link for link in links if link.endswith(SUFFIX)}
+    return {parse_commit_from_name(link.split('/')[-1]): link for link in links if link.endswith(SUFFIX)}
 
 def clone_mixxx():
     if MIXXX_DIR.exists():
@@ -73,7 +82,7 @@ def main():
     commits = sort_commits(list(snapshots.keys()))
 
     if not commits:
-        print('No snapshot commits found')
+        print('No snapshot commits found (or some error occurred while sorting the commits)')
         sys.exit(1)
 
     good = parse_commit(args.good or commits[0])
@@ -96,7 +105,7 @@ def main():
 
     # Binary search over the commits
     while good_idx < bad_idx - 1:
-        print(f'==> Searching {good} to {bad} ({bad_idx - good_idx} commits)...')
+        print(f'==> Searching {good[:10]} to {bad[:10]} ({bad_idx - good_idx} commits)...')
         mid_idx = (bad_idx + good_idx) // 2
         mid = commits[mid_idx]
 
