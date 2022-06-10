@@ -12,6 +12,7 @@ SNAPSHOTS_URL = 'https://downloads.mixxx.org/snapshots/main/'
 SUFFIX = '.dmg'
 BASE_DIR = Path(__file__).resolve().parent
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
+DOWNLOADS_DIR = BASE_DIR / 'downloads'
 
 def get_soup(url: str) -> BeautifulSoup:
     headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
@@ -63,6 +64,7 @@ def main():
     args = parser.parse_args()
 
     clone_mixxx()
+    DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
     snapshots = fetch_snapshots()
     commits = sort_commits(list(snapshots.keys()))
@@ -92,7 +94,7 @@ def main():
         mid = commits[mid_idx]
 
         print(f'==> Checking {describe_commit(mid)}')
-        # TODO
+        # TODO: Download snapshot to DOWNLOADS_DIR and mount disk image
 
         answer = ''
         while not answer or answer not in 'yn':
