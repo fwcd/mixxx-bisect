@@ -37,7 +37,6 @@ def clone_mixxx():
         subprocess.run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)], cwd=BASE_DIR)
 
 def sort_commits(commits: list[str]) -> list[str]:
-    print(commits)
     raw = subprocess.run(['git', 'rev-list', '--no-walk'] + commits, cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
     return raw.splitlines()[::-1]
 
@@ -80,9 +79,21 @@ def main():
 
     # Binary search over the commits
     while good_idx < bad_idx - 1:
-        print(f'==> Searching {good} to {bad}...')
+        print(f'==> Searching {good} to {bad} ({bad_idx - good_idx} commits)...')
+        mid_idx = (bad_idx + good_idx) // 2
+        mid = commits[mid_idx]
+
+        print(f'==> Checking {mid}')
         # TODO
-        break
+
+        answer = ''
+        while not answer or answer not in 'yn':
+            answer = input('Good? [y/n] ')
+
+        if answer == 'y':
+            good_idx = mid_idx
+        else:
+            bad_idx = mid_idx
 
     print(f'Last good: {commits[good_idx]}')
     print(f'First bad: {commits[bad_idx]}')
