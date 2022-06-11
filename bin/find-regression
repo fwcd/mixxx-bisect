@@ -25,12 +25,25 @@ SNAPSHOT_NAME_PATTERNS = [
     re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
 ]
 
+# Utilities
+
 def run(cmd: list[str], cwd=BASE_DIR):
     subprocess.run(cmd, cwd=cwd, check=True)
 
 def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
     result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
     return result.stdout.splitlines()
+
+def get(url: str) -> bytes:
+    headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
+    response = requests.get(url, headers=headers)
+    return response.content
+
+def get_soup(url: str) -> BeautifulSoup:
+    raw = get(url)
+    return BeautifulSoup(raw, 'html.parser')
+
+# Helpers
 
 def clone_mixxx():
     if MIXXX_DIR.exists():
@@ -59,10 +72,7 @@ def describe_commit(rev: str) -> str:
 def commits_in_order(commits: list[str]) -> bool:
     return commits == sort_commits(commits)
 
-def get_soup(url: str) -> BeautifulSoup:
-    headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
-    response = requests.get(url, headers=headers)
-    return BeautifulSoup(response.content, 'html.parser')
+
 
 def parse_commit_from_name(name: str) -> str:
     name = name.removesuffix('.dmg')
@@ -79,9 +89,9 @@ def fetch_snapshots() -> dict[str, str]:
 
 def download_snapshot(link: str):
     print('Downloading snapshot...')
-    response = requests.get(f'{SNAPSHOTS_URL}/{link}')
+    raw = get(f'{SNAPSHOTS_URL}/{link}')
     with open(DOWNLOAD_PATH, 'wb') as f:
-        f.write(response.content)
+        f.write(raw)
 
 def mount_snapshot():
     print('Mounting snapshot...')
@@ -100,6 +110,8 @@ def delete_snapshot():
     print('Deleting snapshot...')
     DOWNLOAD_PATH.unlink()
     CDR_PATH.unlink()
+
+# Main
 
 def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
