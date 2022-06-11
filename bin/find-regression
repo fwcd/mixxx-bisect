@@ -25,25 +25,32 @@ SNAPSHOT_NAME_PATTERNS = [
     re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
 ]
 
+def run(cmd: list[str], cwd=BASE_DIR):
+    subprocess.run(cmd, cwd=cwd, check=True)
+
+def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
+    result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
+    return result.stdout.splitlines()
+
 def clone_mixxx():
     if MIXXX_DIR.exists():
         print('==> Fetching Mixxx...')
-        subprocess.run(['git', 'fetch', 'origin'], cwd=MIXXX_DIR)
+        run(['git', 'fetch', 'origin'], cwd=MIXXX_DIR)
     else:
         print('==> Cloning Mixxx...')
-        subprocess.run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)], cwd=BASE_DIR)
+        run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)])
 
 def sort_commits(commits: list[str]) -> list[str]:
-    raw = subprocess.run(['git', 'rev-list', '--no-walk'] + commits, cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
-    return raw.splitlines()[::-1]
+    lines = run_with_output(['git', 'rev-list', '--no-walk'] + commits, cwd=MIXXX_DIR)
+    return lines[::-1]
 
 def parse_commit(rev: str) -> str:
-    raw = subprocess.run(['git', 'rev-parse', rev], cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
-    return raw.strip()
+    lines = run_with_output(['git', 'rev-parse', rev], cwd=MIXXX_DIR)
+    return lines[0]
 
 def show_commit(rev: str, format: str) -> str:
-    raw = subprocess.run(['git', 'show', '-s', f'--format={format}', rev], cwd=MIXXX_DIR, capture_output=True, encoding='utf8').stdout
-    return raw.strip()
+    lines = run_with_output(['git', 'show', '-s', f'--format={format}', rev], cwd=MIXXX_DIR)
+    return lines[0]
 
 def describe_commit(rev: str) -> str:
     commit = parse_commit(rev)
@@ -78,16 +85,16 @@ def download_snapshot(link: str):
 
 def mount_snapshot():
     print('Mounting snapshot...')
-    subprocess.run(['hdiutil', 'convert', str(DOWNLOAD_PATH), '-format', 'UDTO', '-o', str(CDR_PATH)], cwd=BASE_DIR)
-    subprocess.run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_DIR)], cwd=BASE_DIR)
+    run(['hdiutil', 'convert', str(DOWNLOAD_PATH), '-format', 'UDTO', '-o', str(CDR_PATH)])
+    run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_DIR)])
 
 def run_snapshot():
     print('Running snapshot...')
-    subprocess.run([str(MOUNT_DIR / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+    run([str(MOUNT_DIR / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
 
 def unmount_snapshot():
     print('Unmounting snapshot...')
-    subprocess.run(['hdiutil', 'unmount', str(MOUNT_DIR)], cwd=BASE_DIR)
+    run(['hdiutil', 'unmount', str(MOUNT_DIR)], cwd=BASE_DIR)
 
 def delete_snapshot():
     print('Deleting snapshot...')
