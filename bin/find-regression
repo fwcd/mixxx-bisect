@@ -43,7 +43,7 @@ def get_soup(url: str) -> BeautifulSoup:
     raw = get(url)
     return BeautifulSoup(raw, 'html.parser')
 
-# Helpers
+# Git utils
 
 def clone_mixxx():
     if MIXXX_DIR.exists():
@@ -72,7 +72,7 @@ def describe_commit(rev: str) -> str:
 def commits_in_order(commits: list[str]) -> bool:
     return commits == sort_commits(commits)
 
-
+# Snapshot utils
 
 def parse_commit_from_name(name: str) -> str:
     name = name.removesuffix('.dmg')
@@ -92,6 +92,8 @@ def download_snapshot(link: str):
     raw = get(f'{SNAPSHOTS_URL}/{link}')
     with open(DOWNLOAD_PATH, 'wb') as f:
         f.write(raw)
+
+# Image utils
 
 def mount_snapshot():
     print('Mounting snapshot...')
