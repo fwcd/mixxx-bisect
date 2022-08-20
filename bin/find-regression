@@ -57,6 +57,8 @@ def clone_mixxx():
         run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)])
 
 def sort_commits(commits: list[str]) -> list[str]:
+    # Windows doesn't like passing too many (long) args, so we truncate commit hashes to 8 chars
+    commits = [commit[:8] for commit in commits]
     lines = run_with_output(['git', 'rev-list', '--no-walk'] + commits, cwd=MIXXX_DIR)
     return lines[::-1]
 
