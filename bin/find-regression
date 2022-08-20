@@ -19,12 +19,6 @@ MOUNT_DIR = BASE_DIR / 'mnt'
 LOG_DIR = BASE_DIR / 'log'
 DOWNLOADS_DIR = BASE_DIR / 'downloads'
 
-DOWNLOAD_PATH_MACOS = DOWNLOADS_DIR / 'mixxx-current.dmg'
-CDR_PATH_MACOS = DOWNLOADS_DIR / 'mixxx-current.cdr'
-
-DOWNLOAD_PATH_WINDOWS = DOWNLOADS_DIR / 'mixxx-current.msi'
-INSTALL_PATH_WINDOWS = MOUNT_DIR / 'Mixxx'
-
 OS = platform.system()
 
 SNAPSHOT_NAME_PATTERNS = [
@@ -85,96 +79,98 @@ def commits_in_order(commits: list[str]) -> bool:
 
 # Snapshot utils
 
-def parse_commit_from_name(name: str) -> str:
-    name = name.removesuffix('.dmg')
+def parse_commit_from_name(name: str, suffix: str) -> str:
+    name = name.removesuffix(suffix)
     for pattern in SNAPSHOT_NAME_PATTERNS:
         matches = pattern.search(name)
         if matches:
             return matches[1]
     raise ValueError(f"Could not parse name '{name}'")
 
-def fetch_snapshots() -> dict[str, str]:
+def fetch_snapshots(suffix: str) -> dict[str, str]:
+    print('==> Fetching snapshots...')
     snapshot_soup = get_soup(SNAPSHOTS_URL)
     links = [a.get('href') for a in snapshot_soup.select('a')]
-    return {parse_commit(parse_commit_from_name(link.split('/')[-1])): link for link in links if link.endswith('.dmg')}
+    return {parse_commit(parse_commit_from_name(link.split('/')[-1], suffix)): link for link in links if link.endswith(suffix)}
 
-def download_snapshot(link: str):
+def download_snapshot(link: str, download_path: Path):
     print('Downloading snapshot...')
     raw = get(f'{SNAPSHOTS_URL}/{link}')
-    with open(DOWNLOAD_PATH_MACOS, 'wb') as f:
+    with open(download_path, 'wb') as f:
         f.write(raw)
 
-# macOS install utils
+# Platform-specific snapshot runners
 
-def mount_snapshot_macos():
-    print('Mounting snapshot...')
-    CDR_PATH_MACOS.unlink(missing_ok=True)
-    run(['hdiutil', 'convert', str(DOWNLOAD_PATH_MACOS), '-format', 'UDTO', '-o', str(CDR_PATH_MACOS)])
-    run(['hdiutil', 'attach', str(CDR_PATH_MACOS), '-mountpoint', str(MOUNT_DIR)])
+class WindowsSnapshotRunner:
+    def __init__(self, downloads_dir: Path, mount_dir: Path):
+        self.download_path = downloads_dir / 'mixxx-current.msi'
+        self.mount_dir = mount_dir
+        self.install_dir = mount_dir / 'Mixxx'
 
-def run_snapshot_macos():
-    print('Running snapshot...')
-    run([str(MOUNT_DIR / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+    def setup_snapshot(self):
+        print('Extracting snapshot...')
+        run([
+            'msiexec',
+            '/a', str(self.download_path),           # Install the msi
+            '/q',                                    # Install quietly i.e. without GUI
+            f'TARGETDIR={MOUNT_DIR}',                # Install to custom target dir
+            '/li', str(LOG_DIR / 'msi-install.log'), # Log installation to file
+        ])
 
-def unmount_snapshot_macos():
-    print('Unmounting snapshot...')
-    run(['hdiutil', 'unmount', str(MOUNT_DIR)], cwd=BASE_DIR)
+    def run_snapshot(self):
+        print('Running snapshot...')
+        run([str(self.install_dir / 'mixxx.exe')])
 
-def delete_snapshot_macos():
-    print('Deleting snapshot...')
-    DOWNLOAD_PATH_MACOS.unlink()
-    CDR_PATH_MACOS.unlink()
+    def cleanup_snapshot(self):
+        print('Cleaning up snapshot...')
+        for path in MOUNT_DIR.iterdir():
+            if path.is_file():
+                path.unlink()
+            else:
+                shutil.rmtree(path)
+    
+class MacOSSnapshotRunner:
+    def __init__(self, downloads_dir: Path, mount_dir: Path):
+        self.download_path = downloads_dir / 'mixxx-current.dmg'
+        self.cdr_path = self.download_path.with_suffix('.cdr')
+        self.mount_dir = mount_dir
 
-# Windows install utils
+    def _mount_snapshot(self):
+        print('Mounting snapshot...')
+        self.cdr_path.unlink(missing_ok=True)
+        run(['hdiutil', 'convert', str(self.download_path), '-format', 'UDTO', '-o', str(self.cdr_path)])
+        run(['hdiutil', 'attach', str(self.cdr_path), '-mountpoint', str(self.mount_dir)])
 
-def extract_snapshot_windows():
-    print('Extracting snapshot...')
-    run([
-        'msiexec',
-        '/a', str(DOWNLOAD_PATH_WINDOWS),        # Install the msi
-        '/q',                                    # Install quietly i.e. without GUI
-        f'TARGETDIR="{MOUNT_DIR}"',              # Install to custom target dir
-        '/li', str(LOG_DIR / 'msi-install.log'), # Log installation to file
-    ])
+    def _unmount_snapshot(self):
+        print('Unmounting snapshot...')
+        run(['hdiutil', 'unmount', str(self.mount_dir)], cwd=self.mount_dir.parent)
 
-def run_snapshot_windows():
-    print('Running snapshot...')
-    run([str(INSTALL_PATH_WINDOWS / 'mixxx.exe')])
+    def _delete_snapshot(self):
+        print('Deleting snapshot...')
+        self.download_path.unlink(missing_ok=True)
+        self.cdr_path.unlink(missing_ok=True)
 
-def cleanup_snapshot_windows():
-    print('Cleaning up snapshot...')
-    for path in MOUNT_DIR.iterdir():
-        if path.is_file():
-            path.unlink()
-        else:
-            shutil.rmtree(path)
+    def setup_snapshot(self):
+        self._mount_snapshot()
 
-# General install utils
+    def run_snapshot(self):
+        print('Running snapshot...')
+        run([str(self.mount_dir / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+    
+    def cleanup_snapshot(self):
+        self._unmount_snapshot()
+        self._delete_snapshot()
 
-def setup_snapshot():
-    if OS == 'Darwin':
-        mount_snapshot_macos()
-    elif OS == 'Windows':
-        extract_snapshot_windows()
-    else:
-        print(f'The OS {OS} currently does not support setting up snapshots')
+SNAPSHOT_RUNNERS = {
+    'Windows': WindowsSnapshotRunner,
+    'Darwin': MacOSSnapshotRunner,
+}
 
-def run_snapshot():
-    if OS == 'Darwin':
-        run_snapshot_macos()
-    elif OS == 'Windows':
-        run_snapshot_windows()
-    else:
-        print(f'The OS {OS} currently does not support running snapshots')
+if OS not in SNAPSHOT_RUNNERS.keys():
+    print(f"Unsupported OS: {OS} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.values())})")
+    sys.exit(1)
 
-def teardown_snapshot():
-    if OS == 'Darwin':
-        unmount_snapshot_macos()
-        delete_snapshot_macos()
-    elif OS == 'Windows':
-        cleanup_snapshot_windows()
-    else:
-        print(f'The OS {OS} currently does not support tearing down snapshots')
+SnapshotRunner = SNAPSHOT_RUNNERS[OS]
 
 # Main
 
@@ -185,18 +181,25 @@ def main():
 
     args = parser.parse_args()
 
+    # Clone or fetch repo
     clone_mixxx()
 
+    # Create auxiliary directories
     for dir in [DOWNLOADS_DIR, MOUNT_DIR, LOG_DIR]:
         dir.mkdir(parents=True, exist_ok=True)
 
-    snapshots = fetch_snapshots()
+    # Set up platform-specific snapshot runner
+    runner = SnapshotRunner(DOWNLOADS_DIR, MOUNT_DIR)
+
+    # Fetch snapshots and match them up with Git commits
+    snapshots = fetch_snapshots(runner.download_path.suffix)
     commits = sort_commits(list(snapshots.keys()))
 
     if not commits:
         print('No snapshot commits found (or some error occurred while sorting the commits)')
         sys.exit(1)
 
+    # Parse search range bounds
     good = parse_commit(args.good or commits[0])
     bad = parse_commit(args.bad or commits[-1])
 
@@ -222,10 +225,10 @@ def main():
         mid = commits[mid_idx]
 
         print(f'==> Checking {describe_commit(mid)}')
-        download_snapshot(snapshots[mid])
-        setup_snapshot()
-        run_snapshot()
-        teardown_snapshot()
+        download_snapshot(snapshots[mid], runner.download_path)
+        runner.setup_snapshot()
+        runner.run_snapshot()
+        runner.cleanup_snapshot()
 
         answer = ''
         while not answer or answer not in 'yn':
