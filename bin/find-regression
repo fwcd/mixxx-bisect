@@ -4,6 +4,7 @@ import argparse
 import platform
 import re
 import requests
+import shutil
 import subprocess
 import sys
 
@@ -15,9 +16,14 @@ SNAPSHOTS_URL = 'https://downloads.mixxx.org/snapshots/main/'
 BASE_DIR = Path(__file__).resolve().parent.parent
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
 MOUNT_DIR = BASE_DIR / 'mnt'
+LOG_DIR = BASE_DIR / 'log'
 DOWNLOADS_DIR = BASE_DIR / 'downloads'
-DOWNLOAD_PATH = DOWNLOADS_DIR / f'mixxx-current.dmg'
-CDR_PATH = DOWNLOADS_DIR / f'mixxx-current.cdr'
+
+DOWNLOAD_PATH_MACOS = DOWNLOADS_DIR / 'mixxx-current.dmg'
+CDR_PATH_MACOS = DOWNLOADS_DIR / 'mixxx-current.cdr'
+
+DOWNLOAD_PATH_WINDOWS = DOWNLOADS_DIR / 'mixxx-current.msi'
+INSTALL_PATH_WINDOWS = MOUNT_DIR / 'Mixxx'
 
 OS = platform.system()
 
@@ -95,15 +101,16 @@ def fetch_snapshots() -> dict[str, str]:
 def download_snapshot(link: str):
     print('Downloading snapshot...')
     raw = get(f'{SNAPSHOTS_URL}/{link}')
-    with open(DOWNLOAD_PATH, 'wb') as f:
+    with open(DOWNLOAD_PATH_MACOS, 'wb') as f:
         f.write(raw)
 
 # macOS install utils
 
 def mount_snapshot_macos():
     print('Mounting snapshot...')
-    run(['hdiutil', 'convert', str(DOWNLOAD_PATH), '-format', 'UDTO', '-o', str(CDR_PATH)])
-    run(['hdiutil', 'attach', str(CDR_PATH), '-mountpoint', str(MOUNT_DIR)])
+    CDR_PATH_MACOS.unlink(missing_ok=True)
+    run(['hdiutil', 'convert', str(DOWNLOAD_PATH_MACOS), '-format', 'UDTO', '-o', str(CDR_PATH_MACOS)])
+    run(['hdiutil', 'attach', str(CDR_PATH_MACOS), '-mountpoint', str(MOUNT_DIR)])
 
 def run_snapshot_macos():
     print('Running snapshot...')
@@ -115,20 +122,48 @@ def unmount_snapshot_macos():
 
 def delete_snapshot_macos():
     print('Deleting snapshot...')
-    DOWNLOAD_PATH.unlink()
-    CDR_PATH.unlink()
+    DOWNLOAD_PATH_MACOS.unlink()
+    CDR_PATH_MACOS.unlink()
+
+# Windows install utils
+
+def extract_snapshot_windows():
+    print('Extracting snapshot...')
+    run([
+        'msiexec',
+        '/a', str(DOWNLOAD_PATH_WINDOWS),        # Install the msi
+        '/q',                                    # Install quietly i.e. without GUI
+        f'TARGETDIR="{MOUNT_DIR}"',              # Install to custom target dir
+        '/li', str(LOG_DIR / 'msi-install.log'), # Log installation to file
+    ])
+
+def run_snapshot_windows():
+    print('Running snapshot...')
+    run([str(INSTALL_PATH_WINDOWS / 'mixxx.exe')])
+
+def cleanup_snapshot_windows():
+    print('Cleaning up snapshot...')
+    for path in MOUNT_DIR.iterdir():
+        if path.is_file():
+            path.unlink()
+        else:
+            shutil.rmtree(path)
 
 # General install utils
 
 def setup_snapshot():
     if OS == 'Darwin':
         mount_snapshot_macos()
+    elif OS == 'Windows':
+        extract_snapshot_windows()
     else:
         print(f'The OS {OS} currently does not support setting up snapshots')
 
 def run_snapshot():
     if OS == 'Darwin':
         run_snapshot_macos()
+    elif OS == 'Windows':
+        run_snapshot_windows()
     else:
         print(f'The OS {OS} currently does not support running snapshots')
 
@@ -136,6 +171,8 @@ def teardown_snapshot():
     if OS == 'Darwin':
         unmount_snapshot_macos()
         delete_snapshot_macos()
+    elif OS == 'Windows':
+        cleanup_snapshot_windows()
     else:
         print(f'The OS {OS} currently does not support tearing down snapshots')
 
@@ -150,7 +187,7 @@ def main():
 
     clone_mixxx()
 
-    for dir in [DOWNLOADS_DIR, MOUNT_DIR]:
+    for dir in [DOWNLOADS_DIR, MOUNT_DIR, LOG_DIR]:
         dir.mkdir(parents=True, exist_ok=True)
 
     snapshots = fetch_snapshots()
