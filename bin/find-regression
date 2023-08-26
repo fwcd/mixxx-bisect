@@ -277,6 +277,9 @@ def main():
 
     print(f'Last good: {describe_commit(commits[good_idx])}')
     print(f'First bad: {describe_commit(commits[bad_idx])}')
+    print(f'Trees:     https://github.com/mixxxdj/mixxx/tree/{commits[good_idx]}')
+    print(f'           https://github.com/mixxxdj/mixxx/tree/{commits[bad_idx]}')
+    print(f'Diff:      https://github.com/mixxxdj/mixxx/compare/{commits[good_idx]}...{commits[bad_idx]}')
 
 if __name__ == '__main__':
     main()
