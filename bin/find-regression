@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -29,10 +30,19 @@ SNAPSHOT_NAME_PATTERNS = [
     re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
 ]
 
+@dataclass
+class Options:
+    quiet: bool
+
 # Utilities
 
-def run(cmd: list[str], cwd=BASE_DIR):
-    subprocess.run(cmd, cwd=cwd, stdout=subprocess.DEVNULL)
+def run(cmd: list[str], opts: Options, cwd=BASE_DIR):
+    subprocess.run(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.DEVNULL if opts.quiet else None,
+        stderr=subprocess.DEVNULL if opts.quiet else None,
+    )
 
 def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
     result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
@@ -49,13 +59,13 @@ def get_soup(url: str) -> BeautifulSoup:
 
 # Git utils
 
-def clone_mixxx():
+def clone_mixxx(opts: Options):
     if MIXXX_DIR.exists():
         print('==> Fetching Mixxx...')
-        run(['git', 'fetch', 'origin'], cwd=MIXXX_DIR)
+        run(['git', 'fetch', 'origin'], opts=opts, cwd=MIXXX_DIR)
     else:
         print('==> Cloning Mixxx...')
-        run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)])
+        run(['git', 'clone', '--bare', 'https://github.com/mixxxdj/mixxx.git', str(MIXXX_DIR)], opts=opts)
 
 def sort_commits(commits: list[str]) -> list[str]:
     # Windows doesn't like passing too many (long) args, so we truncate commit hashes to 8 chars
@@ -115,10 +125,11 @@ def download_snapshot(url: str, download_path: Path):
 # Platform-specific snapshot runners
 
 class WindowsSnapshotRunner:
-    def __init__(self, downloads_dir: Path, mount_dir: Path):
+    def __init__(self, downloads_dir: Path, mount_dir: Path, opts: Options):
         self.download_path = downloads_dir / 'mixxx-current.msi'
         self.mount_dir = mount_dir
         self.install_dir = mount_dir / 'Mixxx'
+        self.opts = opts
 
     def setup_snapshot(self):
         print('Extracting snapshot...')
@@ -128,11 +139,11 @@ class WindowsSnapshotRunner:
             '/q',                                    # Install quietly i.e. without GUI
             f'TARGETDIR={MOUNT_DIR}',                # Install to custom target dir
             '/li', str(LOG_DIR / 'msi-install.log'), # Log installation to file
-        ])
+        ], opts=self.opts)
 
     def run_snapshot(self):
         print('Running snapshot...')
-        run([str(self.install_dir / 'mixxx.exe')])
+        run([str(self.install_dir / 'mixxx.exe')], opts=self.opts)
 
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')
@@ -143,20 +154,21 @@ class WindowsSnapshotRunner:
                 shutil.rmtree(path)
     
 class MacOSSnapshotRunner:
-    def __init__(self, downloads_dir: Path, mount_dir: Path):
+    def __init__(self, downloads_dir: Path, mount_dir: Path, opts: Options):
         self.download_path = downloads_dir / 'mixxx-current.dmg'
         self.cdr_path = self.download_path.with_suffix('.cdr')
         self.mount_dir = mount_dir
+        self.opts = opts
 
     def _mount_snapshot(self):
         print('Mounting snapshot...')
         self.cdr_path.unlink(missing_ok=True)
-        run(['hdiutil', 'convert', str(self.download_path), '-format', 'UDTO', '-o', str(self.cdr_path)])
-        run(['hdiutil', 'attach', str(self.cdr_path), '-mountpoint', str(self.mount_dir)])
+        run(['hdiutil', 'convert', str(self.download_path), '-format', 'UDTO', '-o', str(self.cdr_path)], opts=self.opts)
+        run(['hdiutil', 'attach', str(self.cdr_path), '-mountpoint', str(self.mount_dir)], opts=self.opts)
 
     def _unmount_snapshot(self):
         print('Unmounting snapshot...')
-        run(['hdiutil', 'unmount', str(self.mount_dir)], cwd=self.mount_dir.parent)
+        run(['hdiutil', 'unmount', str(self.mount_dir)], cwd=self.mount_dir.parent, opts=self.opts)
 
     def _delete_snapshot(self):
         print('Deleting snapshot...')
@@ -168,7 +180,7 @@ class MacOSSnapshotRunner:
 
     def run_snapshot(self):
         print('Running snapshot...')
-        run([str(self.mount_dir / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')])
+        run([str(self.mount_dir / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')], opts=self.opts)
     
     def cleanup_snapshot(self):
         self._unmount_snapshot()
@@ -190,20 +202,24 @@ SnapshotRunner = SNAPSHOT_RUNNERS[OS]
 def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on. Can be anything in {SNAPSHOTS_BASE_URL}')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
     parser.add_argument('-b', '--bad', help='The upper bound of the commit range (a bad commit)')
 
     args = parser.parse_args()
+    opts = Options(
+        quiet=args.quiet,
+    )
 
     # Clone or fetch repo
-    clone_mixxx()
+    clone_mixxx(opts)
 
     # Create auxiliary directories
     for dir in [DOWNLOADS_DIR, MOUNT_DIR, LOG_DIR]:
         dir.mkdir(parents=True, exist_ok=True)
 
     # Set up platform-specific snapshot runner
-    runner = SnapshotRunner(DOWNLOADS_DIR, MOUNT_DIR)
+    runner = SnapshotRunner(DOWNLOADS_DIR, MOUNT_DIR, opts)
 
     # Fetch snapshots and match them up with Git commits
     snapshots_url = f'{SNAPSHOTS_BASE_URL}{args.branch}/'
