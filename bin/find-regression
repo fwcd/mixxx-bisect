@@ -12,10 +12,7 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 from typing import Optional
 
-SNAPSHOTS_URLS = [
-    f'https://downloads.mixxx.org/snapshots/{branch}/'
-    for branch in ['main', '2.3']
-]
+SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
@@ -192,6 +189,7 @@ SnapshotRunner = SNAPSHOT_RUNNERS[OS]
 
 def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
+    parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on. Can be anything in {SNAPSHOTS_BASE_URL}')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
     parser.add_argument('-b', '--bad', help='The upper bound of the commit range (a bad commit)')
 
@@ -208,14 +206,11 @@ def main():
     runner = SnapshotRunner(DOWNLOADS_DIR, MOUNT_DIR)
 
     # Fetch snapshots and match them up with Git commits
-    snapshots = {
-        snapshot: url
-        for snapshots_url in SNAPSHOTS_URLS
-        for snapshot, url in fetch_snapshots(
-            snapshots_url=snapshots_url,
-            suffix=runner.download_path.suffix,
-        ).items()
-    }
+    snapshots_url = f'{SNAPSHOTS_BASE_URL}{args.branch}/'
+    snapshots = fetch_snapshots(
+        snapshots_url=snapshots_url,
+        suffix=runner.download_path.suffix,
+    )
     commits = sort_commits(list(snapshots.keys()))
 
     if commits:
