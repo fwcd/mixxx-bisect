@@ -256,7 +256,7 @@ def main():
 
     # Binary search over the commits
     while good_idx < bad_idx - 1:
-        print(f'==> Searching {good[:10]} to {bad[:10]} ({bad_idx - good_idx} commits)...')
+        print(f'==> Searching {commits[good_idx][:10]} to {commits[bad_idx][:10]} ({bad_idx - good_idx} commits)...')
         mid_idx = (bad_idx + good_idx) // 2
         mid = commits[mid_idx]
 
