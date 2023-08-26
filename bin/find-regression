@@ -32,7 +32,7 @@ SNAPSHOT_NAME_PATTERNS = [
 # Utilities
 
 def run(cmd: list[str], cwd=BASE_DIR):
-    subprocess.run(cmd, cwd=cwd)
+    subprocess.run(cmd, cwd=cwd, stdout=subprocess.DEVNULL)
 
 def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
     result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
@@ -99,7 +99,7 @@ def fetch_snapshots(snapshots_url: str, suffix: str) -> dict[str, str]:
     snapshot_soup = get_soup(snapshots_url)
     links = [a.get('href') for a in snapshot_soup.select('a')]
     commits = [parse_commit_from_name(link.split('/')[-1], suffix) for link in links]
-    parsed_commits = [try_parse_commit(commit) for commit in commits if commit]
+    parsed_commits = [try_parse_commit(commit) if commit else None for commit in commits]
     return {
         commit: f'{snapshots_url}/{link}'
         for commit, link in zip(parsed_commits, links)
@@ -107,7 +107,7 @@ def fetch_snapshots(snapshots_url: str, suffix: str) -> dict[str, str]:
     }
 
 def download_snapshot(url: str, download_path: Path):
-    print('Downloading snapshot...')
+    print(f'Downloading snapshot...')
     raw = get(url)
     with open(download_path, 'wb') as f:
         f.write(raw)
