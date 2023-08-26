@@ -35,7 +35,7 @@ SNAPSHOT_NAME_PATTERNS = [
 # Utilities
 
 def run(cmd: list[str], cwd=BASE_DIR):
-    subprocess.run(cmd, cwd=cwd, check=True)
+    subprocess.run(cmd, cwd=cwd)
 
 def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
     result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
