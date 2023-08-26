@@ -70,6 +70,12 @@ def parse_commit(rev: str) -> str:
     lines = run_with_output(['git', 'rev-parse', rev], cwd=MIXXX_DIR)
     return lines[0]
 
+def try_parse_commit(rev: str) -> Optional[str]:
+    try:
+        return parse_commit(rev)
+    except subprocess.CalledProcessError:
+        return None
+
 def show_commit(rev: str, format: str) -> str:
     lines = run_with_output(['git', 'show', '-s', f'--format={format}', rev], cwd=MIXXX_DIR)
     return lines[0]
@@ -96,7 +102,12 @@ def fetch_snapshots(snapshots_url: str, suffix: str) -> dict[str, str]:
     snapshot_soup = get_soup(snapshots_url)
     links = [a.get('href') for a in snapshot_soup.select('a')]
     commits = [parse_commit_from_name(link.split('/')[-1], suffix) for link in links]
-    return {parse_commit(commit): link for commit, link in zip(commits, links) if commit and link.endswith(suffix)}
+    parsed_commits = [try_parse_commit(commit) for commit in commits if commit]
+    return {
+        commit: f'{snapshots_url}/{link}'
+        for commit, link in zip(parsed_commits, links)
+        if commit and link.endswith(suffix)
+    }
 
 def download_snapshot(url: str, download_path: Path):
     print('Downloading snapshot...')
@@ -207,7 +218,9 @@ def main():
     }
     commits = sort_commits(list(snapshots.keys()))
 
-    if not commits:
+    if commits:
+        print(f'{len(commits)} snapshot commits found')
+    else:
         print('No snapshot commits found (or some error occurred while sorting the commits)')
         sys.exit(1)
 
