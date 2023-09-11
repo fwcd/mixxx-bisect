@@ -13,7 +13,8 @@ from typing import Optional
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# TODO: Make the base directory customizable
+BASE_DIR = Path.home() / '.local' / 'state' / 'mixxx-bisect'
 MIXXX_DIR = BASE_DIR / 'mixxx.git'
 MOUNT_DIR = BASE_DIR / 'mnt'
 LOG_DIR = BASE_DIR / 'log'
@@ -208,6 +209,9 @@ def main():
     opts = Options(
         quiet=args.quiet,
     )
+
+    # Ensure that the base directory exists
+    BASE_DIR.mkdir(parents=True, exist_ok=True)
 
     # Clone or fetch repo
     clone_mixxx(opts)
