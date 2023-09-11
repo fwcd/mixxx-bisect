@@ -1,11 +1,8 @@
 import argparse
 import platform
-import re
 import sys
 
 from pathlib import Path
-from tqdm import tqdm
-from typing import Optional, cast
 
 from mixxx_bisect.options import Options
 from mixxx_bisect.runner import SnapshotRunner
@@ -13,6 +10,7 @@ from mixxx_bisect.runner.macos import MacOSSnapshotRunner
 from mixxx_bisect.runner.windows import WindowsSnapshotRunner
 from mixxx_bisect.utils.git import clone_mixxx, commits_in_order, describe_commit, parse_commit, sort_commits, try_parse_commit
 from mixxx_bisect.utils.snapshot import download_snapshot, fetch_snapshots
+from mixxx_bisect.utils.version import pkg_version
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
@@ -37,11 +35,17 @@ def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on. Can be anything in {SNAPSHOTS_BASE_URL}')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
+    parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
     parser.add_argument('-b', '--bad', help='The upper bound of the commit range (a bad commit)')
 
     args = parser.parse_args()
+
+    if args.version:
+        print(pkg_version())
+        sys.exit(0)
+
     opts = Options(
         quiet=args.quiet,
         root_dir=args.root,

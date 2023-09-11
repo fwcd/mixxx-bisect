@@ -2,12 +2,14 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 from tqdm import tqdm
 
+from mixxx_bisect.utils.version import pkg_version
+
 import functools
 import requests
 import shutil
 
 def get(url: str, **kwargs) -> requests.Response:
-    headers = {'User-Agent': 'mixxx-bisect/0.1.0'}
+    headers = {'User-Agent': f'mixxx-bisect/{pkg_version()}'}
     response = requests.get(url, headers=headers, **kwargs)
     response.raise_for_status()
     return response
