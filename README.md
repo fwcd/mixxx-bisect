@@ -1,5 +1,6 @@
 # Mixxx Bisect
 
+[![PyPI](https://img.shields.io/pypi/v/mixxx-bisect)](https://pypi.org/project/mixxx-bisect)
 [![Typecheck](https://github.com/fwcd/mixxx-bisect/actions/workflows/typecheck.yml/badge.svg)](https://github.com/fwcd/mixxx-bisect/actions/workflows/typecheck.yml)
 
 A small tool for finding regressions in [Mixxx](https://github.com/mixxxdj/mixxx), inspired by [`mozregression`](https://github.com/mozilla/mozregression). The tool binary searches over a commit range and lets the user tag automatically downloaded Mixxx snapshots with good/bad to identify the commit introducing the regression.
