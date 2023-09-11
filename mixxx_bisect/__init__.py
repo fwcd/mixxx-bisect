@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from pathlib import Path
 from tqdm import tqdm
-from typing import Optional
+from typing import Optional, cast
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 
@@ -121,7 +121,7 @@ def parse_commit_from_name(name: str, suffix: str) -> Optional[str]:
 def fetch_snapshots(snapshots_url: str, suffix: str) -> dict[str, str]:
     print(f'==> Fetching snapshots from {snapshots_url}...')
     snapshot_soup = get_soup(snapshots_url)
-    links = [a.get('href') for a in snapshot_soup.select('a')]
+    links = [cast(str, a.get('href')) for a in snapshot_soup.select('a')]
     commits = [parse_commit_from_name(link.split('/')[-1], suffix) for link in links]
     parsed_commits = [try_parse_commit(commit) if commit else None for commit in commits]
     return {
