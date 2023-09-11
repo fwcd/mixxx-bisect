@@ -18,7 +18,7 @@ Homepage = "https://github.com/fwcd/mixxx-bisect"
 Repository = "https://github.com/fwcd/mixxx-bisect"
 
 [project.scripts]
-mixxx_bisect = "mixxx-bisect:main"
+mixxx-bisect = "mixxx_bisect:main"
 
 [tool.setuptools.packages]
 find = {}
