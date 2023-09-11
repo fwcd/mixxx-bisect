@@ -11,7 +11,10 @@ requires-python = ">=3.9"
 license = { file = "LICENSE" }
 classifiers = ["Topic :: Utilities"]
 keywords = ["mixxx", "bisect", "regression"]
-dependencies = []
+dependencies = [
+  "requests >= 2.31, < 3",
+  "beautifulsoup4 >= 4.12, < 5",
+]
 
 [project.urls]
 Homepage = "https://github.com/fwcd/mixxx-bisect"
