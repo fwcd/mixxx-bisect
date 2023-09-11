@@ -2,7 +2,7 @@ from pathlib import Path
 
 from mixxx_bisect.runner import SnapshotRunner
 from mixxx_bisect.options import Options
-from mixxx_bisect.utils import run
+from mixxx_bisect.utils.run import run
 
 class MacOSSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):

@@ -12,7 +12,8 @@ from mixxx_bisect.options import Options
 from mixxx_bisect.runner import SnapshotRunner
 from mixxx_bisect.runner.macos import MacOSSnapshotRunner
 from mixxx_bisect.runner.windows import WindowsSnapshotRunner
-from mixxx_bisect.utils import download, get_soup, run, run_with_output
+from mixxx_bisect.utils.request import download, get_soup
+from mixxx_bisect.utils.run import run, run_with_output
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
