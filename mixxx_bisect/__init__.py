@@ -25,15 +25,15 @@ SNAPSHOT_RUNNERS: dict[str, type[SnapshotRunner]] = {
     'Darwin': MacOSSnapshotRunner,
 }
 
-if OS not in SNAPSHOT_RUNNERS.keys():
-    print(f"Unsupported OS: {OS} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
-    sys.exit(1)
-
-SnapshotRunner = SNAPSHOT_RUNNERS[OS]
-
 # Main
 
 def main():
+    if OS not in SNAPSHOT_RUNNERS.keys():
+        print(f"Unsupported OS: {OS} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
+        sys.exit(1)
+
+    SnapshotRunner = SNAPSHOT_RUNNERS[OS]
+
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on. Can be anything in {SNAPSHOTS_BASE_URL}')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
