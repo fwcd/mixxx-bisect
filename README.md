@@ -9,7 +9,7 @@ A small tool for finding regressions in [Mixxx](https://github.com/mixxxdj/mixxx
 Run the following command from the repository directory:
 
 ```sh
-bin/find-regression -g [good commit] -b [bad commit]
+bin/mixxx-bisect -g [good commit] -b [bad commit]
 ```
 
 To search the entire range of available snapshots, you can also run `bin/find-regression` without arguments.

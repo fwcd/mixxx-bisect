@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+import sys
+import pathlib
+
+ROOT = pathlib.Path(__file__).parent.parent
+sys.path.insert(1, str(ROOT))
+
+import mixxx_bisect
+
+mixxx_bisect.main()

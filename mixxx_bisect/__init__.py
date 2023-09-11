@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import platform
 import re
@@ -280,6 +278,3 @@ def main():
     print(f'Trees:     https://github.com/mixxxdj/mixxx/tree/{commits[good_idx]}')
     print(f'           https://github.com/mixxxdj/mixxx/tree/{commits[bad_idx]}')
     print(f'Diff:      https://github.com/mixxxdj/mixxx/compare/{commits[good_idx]}...{commits[bad_idx]}')
-
-if __name__ == '__main__':
-    main()
