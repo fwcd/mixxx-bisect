@@ -8,12 +8,27 @@ A small tool for finding regressions in [Mixxx](https://github.com/mixxxdj/mixxx
 
 ## Usage
 
-Run the following command from the repository directory:
+To search a specific range of commits, run:
 
 ```sh
-bin/mixxx-bisect -g [good commit] -b [bad commit]
+mixxx-bisect -g <good commit> -b <bad commit>
 ```
 
-To search the entire range of available snapshots, you can also run `bin/mixxx-bisect` without arguments.
+To search the entire range of available snapshots, run `mixxx-bisect` without arguments.
 
-> Note: On Windows you have to preprend `python3` before the command.
+## Development
+
+To set up a development environment, create a venv with
+
+```sh
+python3 -m venv venv
+. venv/bin/activate
+```
+
+Then, install the package along with its dependencies in editable mode:
+
+```sh
+pip3 install -e .
+```
+
+`mixxx-bisect` should now be on the `PATH` in the venv.
