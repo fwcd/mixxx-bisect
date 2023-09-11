@@ -14,6 +14,7 @@ keywords = ["mixxx", "bisect", "regression"]
 dependencies = [
   "requests >= 2.31, < 3",
   "beautifulsoup4 >= 4.12, < 5",
+  "tqdm >= 4.66, < 5",
 ]
 
 [project.urls]

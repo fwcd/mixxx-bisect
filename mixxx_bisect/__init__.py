@@ -1,4 +1,5 @@
 import argparse
+import functools
 import platform
 import re
 import requests
@@ -9,6 +10,7 @@ import sys
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from pathlib import Path
+from tqdm import tqdm
 from typing import Optional
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
@@ -47,13 +49,26 @@ def run_with_output(cmd: list[str], cwd=BASE_DIR) -> list[str]:
     result = subprocess.run(cmd, cwd=cwd, check=True, capture_output=True, encoding='utf8')
     return result.stdout.splitlines()
 
-def get(url: str) -> bytes:
-    headers = {'User-Agent': 'MixxxRegressionFinder/0.0.1'}
-    response = requests.get(url, headers=headers)
-    return response.content
+def get(url: str, **kwargs) -> requests.Response:
+    headers = {'User-Agent': 'mixxx-bisect/0.1.0'}
+    response = requests.get(url, headers=headers, **kwargs)
+    response.raise_for_status()
+    return response
+
+def download(url: str, output: Path):
+    # https://stackoverflow.com/a/63831344
+    response = get(url, stream=True, allow_redirects=True)
+    file_size = int(response.headers.get('Content-Length', 0))
+
+    # Decompress if needed
+    response.raw.read = functools.partial(response.raw.read, decode_content=True)
+
+    with tqdm.wrapattr(response.raw, 'read', total=file_size) as raw:
+        with output.open('wb') as f:
+            shutil.copyfileobj(raw, f)
 
 def get_soup(url: str) -> BeautifulSoup:
-    raw = get(url)
+    raw = get(url).content
     return BeautifulSoup(raw, 'html.parser')
 
 # Git utils
@@ -117,9 +132,7 @@ def fetch_snapshots(snapshots_url: str, suffix: str) -> dict[str, str]:
 
 def download_snapshot(url: str, download_path: Path):
     print(f'Downloading snapshot...')
-    raw = get(url)
-    with open(download_path, 'wb') as f:
-        f.write(raw)
+    download(url, download_path)
 
 # Platform-specific snapshot runners
 
