@@ -14,6 +14,6 @@ Run the following command from the repository directory:
 bin/mixxx-bisect -g [good commit] -b [bad commit]
 ```
 
-To search the entire range of available snapshots, you can also run `bin/find-regression` without arguments.
+To search the entire range of available snapshots, you can also run `bin/mixxx-bisect` without arguments.
 
 > Note: On Windows you have to preprend `python3` before the command.
