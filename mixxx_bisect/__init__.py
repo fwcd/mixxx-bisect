@@ -12,44 +12,11 @@ from mixxx_bisect.runner import SnapshotRunner
 from mixxx_bisect.runner.macos import MacOSSnapshotRunner
 from mixxx_bisect.runner.windows import WindowsSnapshotRunner
 from mixxx_bisect.utils.git import clone_mixxx, commits_in_order, describe_commit, parse_commit, sort_commits, try_parse_commit
-from mixxx_bisect.utils.request import download, get_soup
+from mixxx_bisect.utils.snapshot import download_snapshot, fetch_snapshots
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
 OS = platform.system()
-
-SNAPSHOT_NAME_PATTERNS = [
-    # Old pattern, e.g. mixxx-main-r7715-a0f80e8464
-    re.compile(r'^mixxx-[\w\.]+-r\d+-(\w+)$'),
-    # New pattern, e.g. mixxx-2.4-alpha-6370-g44f29763ed-macosintel
-    re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-\w+$'),
-]
-
-# Snapshot utils
-
-def parse_commit_from_name(name: str, suffix: str) -> Optional[str]:
-    name = name.removesuffix(suffix)
-    for pattern in SNAPSHOT_NAME_PATTERNS:
-        matches = pattern.search(name)
-        if matches:
-            return matches[1]
-    return None
-
-def fetch_snapshots(snapshots_url: str, suffix: str, opts: Options) -> dict[str, str]:
-    print(f'==> Fetching snapshots from {snapshots_url}...')
-    snapshot_soup = get_soup(snapshots_url)
-    links = [cast(str, a.get('href')) for a in snapshot_soup.select('a')]
-    commits = [parse_commit_from_name(link.split('/')[-1], suffix) for link in links]
-    parsed_commits = [try_parse_commit(commit, opts) if commit else None for commit in commits]
-    return {
-        commit: f'{snapshots_url}/{link}'
-        for commit, link in zip(parsed_commits, links)
-        if commit and link.endswith(suffix)
-    }
-
-def download_snapshot(url: str, download_path: Path):
-    print(f'Downloading snapshot...')
-    download(url, download_path)
 
 # Platform-specific snapshot runners
 
