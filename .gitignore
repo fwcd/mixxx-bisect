@@ -3,6 +3,7 @@
 *.egg-info
 __pycache__
 build
+dist
 venv
 
 # Legacy state directories, moved to ~/.local/state/mixxx-bisect
