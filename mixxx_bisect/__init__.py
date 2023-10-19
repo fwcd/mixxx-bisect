@@ -1,4 +1,5 @@
 import argparse
+import json
 import platform
 import sys
 
@@ -41,6 +42,7 @@ def main():
     parser.add_argument('--hoster', default='mixxx-org', choices=sorted(SNAPSHOT_HOSTERS.keys()), help=f'THe snapshot archive to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
+    parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
     parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
@@ -82,7 +84,11 @@ def main():
         suffix=runner.download_path.suffix,
         opts=opts
     )
+
     snapshots = hoster.fetch_snapshots()
+    if args.dump_snapshots:
+        print(json.dumps(snapshots, indent=2))
+
     commits = sort_commits(list(snapshots.keys()), opts)
 
     if commits:
