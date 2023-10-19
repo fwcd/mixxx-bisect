@@ -14,14 +14,14 @@ class SnapshotRunner(Protocol):
         '''The path to download to.'''
         raise NotImplementedError()
 
-    def setup_snapshot(self):
+    def setup_snapshot(self) -> None:
         '''Extracts or mounts the snapshot.'''
         raise NotImplementedError()
     
-    def run_snapshot(self):
+    def run_snapshot(self) -> None:
         '''Runs the snapshot.'''
         raise NotImplementedError()
     
-    def cleanup_snapshot(self):
+    def cleanup_snapshot(self) -> None:
         '''Cleans up the snapshot.'''
         raise NotImplementedError()
