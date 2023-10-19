@@ -3,16 +3,17 @@ import platform
 import sys
 
 from pathlib import Path
+from mixxx_bisect.hoster import SnapshotHoster
+from mixxx_bisect.hoster.mixxx_org import MixxxOrgSnapshotHoster
 
 from mixxx_bisect.options import Options
 from mixxx_bisect.runner import SnapshotRunner
 from mixxx_bisect.runner.macos import MacOSSnapshotRunner
 from mixxx_bisect.runner.windows import WindowsSnapshotRunner
-from mixxx_bisect.utils.git import clone_mixxx, commits_in_order, describe_commit, parse_commit, sort_commits, try_parse_commit
-from mixxx_bisect.utils.snapshot import download_snapshot, fetch_snapshots
+from mixxx_bisect.utils.git import clone_mixxx, commits_in_order, describe_commit, parse_commit, sort_commits
+from mixxx_bisect.utils.snapshot import download_snapshot
 from mixxx_bisect.utils.version import pkg_version
 
-SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
 OS = platform.system()
 
@@ -21,6 +22,10 @@ OS = platform.system()
 SNAPSHOT_RUNNERS: dict[str, type[SnapshotRunner]] = {
     'Windows': WindowsSnapshotRunner,
     'Darwin': MacOSSnapshotRunner,
+}
+
+SNAPSHOT_HOSTERS: dict[str, type[SnapshotHoster]] = {
+    'mixxx-org': MixxxOrgSnapshotHoster,
 }
 
 # Main
@@ -33,7 +38,8 @@ def main():
     SnapshotRunner = SNAPSHOT_RUNNERS[OS]
 
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
-    parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on. Can be anything in {SNAPSHOTS_BASE_URL}')
+    parser.add_argument('--hoster', default='mixxx-org', choices=sorted(SNAPSHOT_HOSTERS.keys()), help=f'THe snapshot archive to use.')
+    parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
@@ -41,6 +47,8 @@ def main():
     parser.add_argument('-b', '--bad', help='The upper bound of the commit range (a bad commit)')
 
     args = parser.parse_args()
+
+    SnapshotHoster = SNAPSHOT_HOSTERS[args.hoster]
 
     if args.version:
         print(pkg_version())
@@ -69,12 +77,12 @@ def main():
     runner = SnapshotRunner(opts)
 
     # Fetch snapshots and match them up with Git commits
-    snapshots_url = f'{SNAPSHOTS_BASE_URL}{args.branch}/'
-    snapshots = fetch_snapshots(
-        snapshots_url=snapshots_url,
+    hoster = SnapshotHoster(
+        branch=args.branch,
         suffix=runner.download_path.suffix,
-        opts=opts,
+        opts=opts
     )
+    snapshots = hoster.fetch_snapshots()
     commits = sort_commits(list(snapshots.keys()), opts)
 
     if commits:
