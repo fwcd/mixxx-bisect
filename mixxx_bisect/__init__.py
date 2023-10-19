@@ -5,6 +5,7 @@ import sys
 
 from pathlib import Path
 from mixxx_bisect.hoster import SnapshotHoster
+from mixxx_bisect.hoster.m1xxx import M1xxxSnapshotHoster
 from mixxx_bisect.hoster.mixxx_org import MixxxOrgSnapshotHoster
 
 from mixxx_bisect.options import Options
@@ -27,6 +28,7 @@ SNAPSHOT_RUNNERS: dict[str, type[SnapshotRunner]] = {
 
 SNAPSHOT_HOSTERS: dict[str, type[SnapshotHoster]] = {
     'mixxx-org': MixxxOrgSnapshotHoster,
+    'm1xxx': M1xxxSnapshotHoster,
 }
 
 # Main
