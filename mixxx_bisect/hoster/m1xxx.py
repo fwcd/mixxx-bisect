@@ -9,6 +9,9 @@ import re
 
 RELEASES_API_URL = 'https://api.github.com/repos/fwcd/m1xxx/releases'
 SNAPSHOT_NAME_PATTERNS = [
+    # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
+    re.compile(r'^mixxx-\w+-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
+    # Old pattern, e.g. mixxx-2.5.0.c45816.r7c1bb1b997
     re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$'),
 ]
 
