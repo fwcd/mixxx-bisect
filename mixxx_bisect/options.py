@@ -4,6 +4,7 @@ from pathlib import Path
 @dataclass
 class Options:
     quiet: bool
+    verbose: bool
     root_dir: Path
     mixxx_dir: Path
     mount_dir: Path

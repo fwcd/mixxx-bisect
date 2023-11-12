@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
+    parser.add_argument('--verbose', action='store_true', help='Enables verbose output.')
     parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
@@ -60,6 +61,7 @@ def main():
 
     opts = Options(
         quiet=args.quiet,
+        verbose=args.verbose,
         root_dir=args.root,
         mixxx_dir=args.root / 'mixxx.git',
         mount_dir=args.root / 'mnt',
@@ -94,7 +96,10 @@ def main():
     commits = sort_commits(list(snapshots.keys()), opts)
 
     if commits:
-        print(f'{len(commits)} snapshot commits found')
+        print(f'{len(commits)} snapshot commits found.')
+        if opts.verbose:
+            for commit in commits:
+                print(f'  {describe_commit(commit, opts)}')
     else:
         print('No snapshot commits found (or some error occurred while sorting the commits)')
         sys.exit(1)
