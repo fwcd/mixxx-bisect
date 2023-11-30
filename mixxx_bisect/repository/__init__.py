@@ -2,8 +2,8 @@ from typing import Protocol
 
 from mixxx_bisect.options import Options
 
-class SnapshotHoster(Protocol):
-    '''A snapshot archive hosted on the web.'''
+class SnapshotRepository(Protocol):
+    '''A repository/archive of (binary) Mixxx snapshots, usually hosted on the web.'''
 
     def __init__(self, branch: str, suffix: str, opts: Options):
         pass

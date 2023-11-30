@@ -5,9 +5,9 @@ import sys
 
 from pathlib import Path
 from mixxx_bisect.error import EmptyRangeError, MixxxBisectError, NoCommitsFoundError, MissingSnapshotsError, UnsupportedOSError
-from mixxx_bisect.hoster import SnapshotHoster
-from mixxx_bisect.hoster.m1xxx import M1xxxSnapshotHoster
-from mixxx_bisect.hoster.mixxx_org import MixxxOrgSnapshotHoster
+from mixxx_bisect.repository import SnapshotRepository
+from mixxx_bisect.repository.m1xxx import M1xxxSnapshotRepository
+from mixxx_bisect.repository.mixxx_org import MixxxOrgSnapshotRepository
 
 from mixxx_bisect.options import Options
 from mixxx_bisect.runner import SnapshotRunner
@@ -26,16 +26,16 @@ SNAPSHOT_RUNNERS: dict[str, type[SnapshotRunner]] = {
     'Darwin': MacOSSnapshotRunner,
 }
 
-SNAPSHOT_HOSTERS: dict[str, type[SnapshotHoster]] = {
-    'mixxx-org': MixxxOrgSnapshotHoster,
-    'm1xxx': M1xxxSnapshotHoster,
+SNAPSHOT_REPOSITORIES: dict[str, type[SnapshotRepository]] = {
+    'mixxx-org': MixxxOrgSnapshotRepository,
+    'm1xxx': M1xxxSnapshotRepository,
 }
 
 # Main
 
 def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
-    parser.add_argument('--hoster', default='mixxx-org', choices=sorted(SNAPSHOT_HOSTERS.keys()), help=f'The snapshot archive to use.')
+    parser.add_argument('--repository', default='mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
@@ -59,7 +59,7 @@ def main():
             raise UnsupportedOSError(f"Unsupported OS: {os} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
 
         SnapshotRunner = SNAPSHOT_RUNNERS[os]
-        SnapshotHoster = SNAPSHOT_HOSTERS[args.hoster]
+        SnapshotRepository = SNAPSHOT_REPOSITORIES[args.repository]
 
         opts = Options(
             quiet=args.quiet,
@@ -75,7 +75,7 @@ def main():
         # Ensure that the root directory exists
         opts.root_dir.mkdir(parents=True, exist_ok=True)
 
-        # Clone or fetch repo
+        # Clone or fetch git repo
         clone_mixxx(opts)
 
         # Create auxiliary directories
@@ -86,7 +86,7 @@ def main():
         runner = SnapshotRunner(opts)
 
         # Fetch snapshots and match them up with Git commits
-        hoster = SnapshotHoster(
+        hoster = SnapshotRepository(
             branch=args.branch,
             suffix=runner.download_path.suffix,
             opts=opts

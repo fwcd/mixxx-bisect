@@ -1,7 +1,7 @@
 from typing import Optional, cast
 from mixxx_bisect.error import UnsupportedArchError
 
-from mixxx_bisect.hoster import SnapshotHoster
+from mixxx_bisect.repository import SnapshotRepository
 from mixxx_bisect.options import Options
 from mixxx_bisect.utils.git import try_parse_commit
 from mixxx_bisect.utils.request import get
@@ -10,7 +10,7 @@ import re
 
 RELEASES_API_URL = 'https://api.github.com/repos/fwcd/m1xxx/releases'
 
-class M1xxxSnapshotHoster(SnapshotHoster):
+class M1xxxSnapshotRepository(SnapshotRepository):
     def __init__(self, branch: str, suffix: str, opts: Options):
         self.suffix = suffix
         self.opts = opts

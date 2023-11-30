@@ -1,7 +1,7 @@
 from typing import Optional, cast
 from mixxx_bisect.error import UnsupportedArchError
 
-from mixxx_bisect.hoster import SnapshotHoster
+from mixxx_bisect.repository import SnapshotRepository
 from mixxx_bisect.options import Options
 from mixxx_bisect.utils.git import try_parse_commit
 from mixxx_bisect.utils.request import get_soup
@@ -10,7 +10,7 @@ import re
 
 SNAPSHOTS_BASE_URL = 'https://downloads.mixxx.org/snapshots/'
 
-class MixxxOrgSnapshotHoster(SnapshotHoster):
+class MixxxOrgSnapshotRepository(SnapshotRepository):
     def __init__(self, branch: str, suffix: str, opts: Options):
         self.snapshots_url = f'{SNAPSHOTS_BASE_URL}{branch}/'
         self.branch = branch
