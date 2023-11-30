@@ -1,4 +1,5 @@
 from typing import Optional, cast
+from mixxx_bisect.error import UnsupportedArchError
 
 from mixxx_bisect.hoster import SnapshotHoster
 from mixxx_bisect.options import Options
@@ -22,7 +23,7 @@ class M1xxxSnapshotHoster(SnapshotHoster):
         }.get(opts.arch)
 
         if arch is None:
-            raise ValueError(f'Unsupported architecture: {opts.arch}')
+            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the m1xxx hoster.')
 
         self.snapshot_name_patterns = [
             # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
