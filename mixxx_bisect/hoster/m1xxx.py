@@ -9,6 +9,9 @@ import re
 
 RELEASES_API_URL = 'https://api.github.com/repos/fwcd/m1xxx/releases'
 SNAPSHOT_NAME_PATTERNS = [
+    # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
+    # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
+    re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-\w+-osx-min\d+-release$'),
     # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100
     re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-\w+-osx-min\d+$'),
     # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
