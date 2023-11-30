@@ -8,30 +8,30 @@ from mixxx_bisect.utils.request import get
 import re
 
 RELEASES_API_URL = 'https://api.github.com/repos/fwcd/m1xxx/releases'
-SNAPSHOT_NAME_PATTERNS = [
-    # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
-    # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
-    re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-\w+-osx-min\d+-release$'),
-    # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100
-    re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-\w+-osx-min\d+$'),
-    # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
-    re.compile(r'^mixxx-\w+-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
-    # Old pattern, e.g. mixxx-2.5.0.c45816.r7c1bb1b997
-    re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$'),
-]
-
-def parse_commit_from_name(name: str, suffix: str) -> Optional[str]:
-    name = name.removesuffix(suffix)
-    for pattern in SNAPSHOT_NAME_PATTERNS:
-        matches = pattern.search(name)
-        if matches:
-            return matches[1]
-    return None
 
 class M1xxxSnapshotHoster(SnapshotHoster):
     def __init__(self, branch: str, suffix: str, opts: Options):
         self.suffix = suffix
         self.opts = opts
+
+        raw_arch_pattern = re.escape({
+            'arm64': 'arm64',
+            'aarch64': 'arm64',
+            'x86_64': 'x64',
+            'x86-64': 'x64',
+        }.get(opts.arch, opts.arch))
+
+        self.snapshot_name_patterns = [
+            # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
+            # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + raw_arch_pattern + r'-osx-min\d+-release$'),
+            # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + raw_arch_pattern + r'-osx-min\d+$'),
+            # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
+            re.compile(r'^mixxx-' + raw_arch_pattern + r'-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
+            # Old pattern, e.g. mixxx-2.5.0.c45816.r7c1bb1b997
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$'),
+        ]
     
     def fetch_snapshots(self) -> dict[str, str]:
         print(f'==> Fetching snapshots from {RELEASES_API_URL}...')
@@ -43,10 +43,18 @@ class M1xxxSnapshotHoster(SnapshotHoster):
             for asset in release.get('assets', [])
             if cast(str, asset['name']).endswith(self.suffix)
         ]
-        commits = [parse_commit_from_name(url.split('/')[-1], self.suffix) for url in urls]
+        commits = [self._parse_commit_from_name(url.split('/')[-1], self.suffix) for url in urls]
         parsed_commits = [try_parse_commit(commit, self.opts) if commit else None for commit in commits]
         return {
             commit: url
             for commit, url in zip(parsed_commits, urls)
             if commit and url.endswith(self.suffix)
         }
+
+    def _parse_commit_from_name(self, name: str, suffix: str) -> Optional[str]:
+        name = name.removesuffix(suffix)
+        for pattern in self.snapshot_name_patterns:
+            matches = pattern.search(name)
+            if matches:
+                return matches[1]
+        return None

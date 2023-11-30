@@ -5,6 +5,7 @@ from pathlib import Path
 class Options:
     quiet: bool
     verbose: bool
+    arch: str
     root_dir: Path
     mixxx_dir: Path
     mount_dir: Path

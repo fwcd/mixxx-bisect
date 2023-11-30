@@ -17,7 +17,6 @@ from mixxx_bisect.utils.snapshot import download_snapshot
 from mixxx_bisect.utils.version import pkg_version
 
 DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
-OS = platform.system()
 
 # Platform-specific snapshot runners
 
@@ -34,18 +33,21 @@ SNAPSHOT_HOSTERS: dict[str, type[SnapshotHoster]] = {
 # Main
 
 def main():
-    if OS not in SNAPSHOT_RUNNERS.keys():
-        print(f"Unsupported OS: {OS} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
+    os = platform.system()
+
+    if os not in SNAPSHOT_RUNNERS.keys():
+        print(f"Unsupported OS: {os} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
         sys.exit(1)
 
-    SnapshotRunner = SNAPSHOT_RUNNERS[OS]
+    SnapshotRunner = SNAPSHOT_RUNNERS[os]
 
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
-    parser.add_argument('--hoster', default='mixxx-org', choices=sorted(SNAPSHOT_HOSTERS.keys()), help=f'THe snapshot archive to use.')
+    parser.add_argument('--hoster', default='mixxx-org', choices=sorted(SNAPSHOT_HOSTERS.keys()), help=f'The snapshot archive to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
     parser.add_argument('--verbose', action='store_true', help='Enables verbose output.')
+    parser.add_argument('--arch', default=platform.machine(), help="The architecture to query for. Defaults to `platform.machine()`, requires the hoster to provide corresponding binaries and is primarily useful for machines capable of running multiple architectures, e.g. via Rosetta or QEMU.")
     parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
@@ -62,6 +64,7 @@ def main():
     opts = Options(
         quiet=args.quiet,
         verbose=args.verbose,
+        arch=args.arch,
         root_dir=args.root,
         mixxx_dir=args.root / 'mixxx.git',
         mount_dir=args.root / 'mnt',
@@ -93,7 +96,11 @@ def main():
     if args.dump_snapshots:
         print(json.dumps(snapshots, indent=2))
 
-    commits = sort_commits(list(snapshots.keys()), opts)
+    if snapshots:
+        commits = sort_commits(list(snapshots.keys()), opts)
+    else:
+        print(f'No snapshots found (for architecture {opts.arch})!')
+        sys.exit(1)
 
     if commits:
         print(f'{len(commits)} snapshot commits found.')
