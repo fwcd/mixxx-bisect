@@ -16,18 +16,21 @@ class MixxxOrgSnapshotHoster(SnapshotHoster):
         self.suffix = suffix
         self.opts = opts
 
-        raw_arch_pattern = re.escape({
+        arch = {
             'arm64': 'arm',
             'aarch64': 'arm',
             'x86_64': 'intel',
             'x86-64': 'intel',
-        }.get(opts.arch, opts.arch))
+        }.get(opts.arch)
+
+        if arch is None:
+            raise ValueError(f'Unsupported architecture: {opts.arch}')
 
         self.snapshot_name_patterns = [
             # New pattern, e.g. mixxx-2.4-alpha-6370-g44f29763ed-macosintel
-            re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-macos' + raw_arch_pattern + r'$'),
+            re.compile(r'^mixxx-[\d\.]+(?:-[a-z]+)?-\d+-g(\w+)-macos' + re.escape(arch) + r'$'),
             # Old pattern, e.g. mixxx-main-r7715-a0f80e8464
-            re.compile(r'^mixxx-[\w\.]+-r\d+-(\w+)$'),
+            *([re.compile(r'^mixxx-[\w\.]+-r\d+-(\w+)$')] if arch == 'intel' else []),
         ]
     
     def fetch_snapshots(self) -> dict[str, str]:

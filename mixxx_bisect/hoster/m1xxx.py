@@ -14,23 +14,26 @@ class M1xxxSnapshotHoster(SnapshotHoster):
         self.suffix = suffix
         self.opts = opts
 
-        raw_arch_pattern = re.escape({
+        arch = {
             'arm64': 'arm64',
             'aarch64': 'arm64',
             'x86_64': 'x64',
             'x86-64': 'x64',
-        }.get(opts.arch, opts.arch))
+        }.get(opts.arch)
+
+        if arch is None:
+            raise ValueError(f'Unsupported architecture: {opts.arch}')
 
         self.snapshot_name_patterns = [
             # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
             # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
-            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + raw_arch_pattern + r'-osx-min\d+-release$'),
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + re.escape(arch) + r'-osx-min\d+-release$'),
             # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100
-            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + raw_arch_pattern + r'-osx-min\d+$'),
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + re.escape(arch) + r'-osx-min\d+$'),
             # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
-            re.compile(r'^mixxx-' + raw_arch_pattern + r'-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
+            re.compile(r'^mixxx-' + re.escape(arch) + r'-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
             # Old pattern, e.g. mixxx-2.5.0.c45816.r7c1bb1b997
-            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$'),
+            *([re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$')] if arch == 'arm64' else []),
         ]
     
     def fetch_snapshots(self) -> dict[str, str]:
