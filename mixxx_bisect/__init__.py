@@ -34,8 +34,10 @@ SNAPSHOT_REPOSITORIES: dict[str, type[SnapshotRepository]] = {
 # Main
 
 def main():
+    os = platform.system()
+
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
-    parser.add_argument('--repository', default='mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
+    parser.add_argument('--repository', default='m1xxx' if os == 'Linux' else 'mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
@@ -53,8 +55,6 @@ def main():
         return
 
     try:
-        os = platform.system()
-
         if os not in SNAPSHOT_RUNNERS.keys():
             raise UnsupportedOSError(f"Unsupported OS: {os} has no snapshot runner (supported are {', '.join(SNAPSHOT_RUNNERS.keys())})")
 
