@@ -64,6 +64,7 @@ def main():
         opts = Options(
             quiet=args.quiet,
             verbose=args.verbose,
+            os=os,
             arch=args.arch,
             root_dir=args.root,
             mixxx_dir=args.root / 'mixxx.git',
