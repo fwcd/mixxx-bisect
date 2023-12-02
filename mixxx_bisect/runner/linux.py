@@ -13,8 +13,12 @@ class LinuxSnapshotRunner(SnapshotRunner):
         self.opts = opts
     
     @property
+    def suffix(self) -> str:
+        return '.tar.gz'
+
+    @property
     def download_path(self) -> Path:
-        return self.opts.downloads_dir / 'mixxx-current.tar.gz'
+        return self.opts.downloads_dir / f'mixxx-current{self.suffix}'
 
     def setup_snapshot(self):
         print('Extracting snapshot...')

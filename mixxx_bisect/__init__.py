@@ -91,7 +91,7 @@ def main():
         # Fetch snapshots and match them up with Git commits
         repository = SnapshotRepository(
             branch=args.branch,
-            suffix=runner.download_path.suffix,
+            suffix=runner.suffix,
             opts=opts
         )
 

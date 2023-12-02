@@ -8,10 +8,14 @@ class MacOSSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):
         self.mount_dir = opts.mount_dir
         self.opts = opts
+
+    @property
+    def suffix(self) -> str:
+        return '.dmg'
     
     @property
     def download_path(self) -> Path:
-        return self.opts.downloads_dir / 'mixxx-current.dmg'
+        return self.opts.downloads_dir / f'mixxx-current{self.suffix}'
     
     @property
     def cdr_path(self) -> Path:
