@@ -23,7 +23,7 @@ class M1xxxSnapshotRepository(SnapshotRepository):
         }.get(opts.arch)
 
         if arch is None:
-            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the m1xxx hoster.')
+            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the m1xxx repository.')
 
         os = {
             'Darwin': 'osx',

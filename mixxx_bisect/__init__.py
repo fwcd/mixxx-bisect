@@ -38,11 +38,11 @@ def main():
 
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('--repository', default='m1xxx' if os == 'Linux' else 'mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
-    parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the hoster.')
+    parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the repository.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
     parser.add_argument('--verbose', action='store_true', help='Enables verbose output.')
-    parser.add_argument('--arch', default=platform.machine(), help="The architecture to query for. Defaults to `platform.machine()`, requires the hoster to provide corresponding binaries and is primarily useful for machines capable of running multiple architectures, e.g. via Rosetta or QEMU.")
+    parser.add_argument('--arch', default=platform.machine(), help="The architecture to query for. Defaults to `platform.machine()`, requires the repository to provide corresponding binaries and is primarily useful for machines capable of running multiple architectures, e.g. via Rosetta or QEMU.")
     parser.add_argument('-v', '--version', action='store_true', help='Outputs the version.')
     parser.add_argument('-q', '--quiet', action='store_true', help='Suppress output from subprocesses.')
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
@@ -87,13 +87,13 @@ def main():
         runner = SnapshotRunner(opts)
 
         # Fetch snapshots and match them up with Git commits
-        hoster = SnapshotRepository(
+        repository = SnapshotRepository(
             branch=args.branch,
             suffix=runner.download_path.suffix,
             opts=opts
         )
 
-        snapshots = hoster.fetch_snapshots()
+        snapshots = repository.fetch_snapshots()
         if args.dump_snapshots:
             print(json.dumps(snapshots, indent=2))
 
