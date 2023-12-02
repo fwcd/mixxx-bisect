@@ -11,6 +11,7 @@ from mixxx_bisect.repository.mixxx_org import MixxxOrgSnapshotRepository
 
 from mixxx_bisect.options import Options
 from mixxx_bisect.runner import SnapshotRunner
+from mixxx_bisect.runner.linux import LinuxSnapshotRunner
 from mixxx_bisect.runner.macos import MacOSSnapshotRunner
 from mixxx_bisect.runner.windows import WindowsSnapshotRunner
 from mixxx_bisect.utils.git import clone_mixxx, commits_in_order, describe_commit, parse_commit, sort_commits
@@ -24,6 +25,7 @@ DEFAULT_ROOT = Path.home() / '.local' / 'state' / 'mixxx-bisect'
 SNAPSHOT_RUNNERS: dict[str, type[SnapshotRunner]] = {
     'Windows': WindowsSnapshotRunner,
     'Darwin': MacOSSnapshotRunner,
+    'Linux': LinuxSnapshotRunner,
 }
 
 SNAPSHOT_REPOSITORIES: dict[str, type[SnapshotRepository]] = {
