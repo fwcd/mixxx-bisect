@@ -41,7 +41,7 @@ def main():
     parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
     parser.add_argument('--repository', default='m1xxx' if os == 'Linux' else 'mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the repository.')
-    parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, mounted snapshots etc.) will be stored.')
+    parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, installed snapshots etc.) will be stored.')
     parser.add_argument('--dump-snapshots', action='store_true', help='Dumps the fetched snapshots.')
     parser.add_argument('--verbose', action='store_true', help='Enables verbose output.')
     parser.add_argument('--arch', default=platform.machine(), help="The architecture to query for. Defaults to `platform.machine()`, requires the repository to provide corresponding binaries and is primarily useful for machines capable of running multiple architectures, e.g. via Rosetta or QEMU.")
@@ -70,7 +70,7 @@ def main():
             arch=args.arch,
             root_dir=args.root,
             mixxx_dir=args.root / 'mixxx.git',
-            mount_dir=args.root / 'mnt',
+            installs_dir=args.root / 'installs',
             log_dir=args.root / 'log',
             downloads_dir=args.root / 'downloads',
         )
@@ -82,7 +82,7 @@ def main():
         clone_mixxx(opts)
 
         # Create auxiliary directories
-        for dir in [opts.downloads_dir, opts.mount_dir, opts.log_dir]:
+        for dir in [opts.downloads_dir, opts.installs_dir, opts.log_dir]:
             dir.mkdir(parents=True, exist_ok=True)
 
         # Set up platform-specific snapshot runner

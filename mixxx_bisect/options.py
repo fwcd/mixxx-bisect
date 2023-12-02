@@ -9,6 +9,6 @@ class Options:
     arch: str
     root_dir: Path
     mixxx_dir: Path
-    mount_dir: Path
+    installs_dir: Path
     log_dir: Path
     downloads_dir: Path

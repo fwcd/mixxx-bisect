@@ -8,7 +8,6 @@ import shutil
 
 class LinuxSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):
-        self.mount_dir = opts.mount_dir
         self.opts = opts
     
     @property
@@ -21,18 +20,18 @@ class LinuxSnapshotRunner(SnapshotRunner):
 
     def setup_snapshot(self):
         print('Extracting snapshot...')
-        shutil.unpack_archive(self.download_path, self.mount_dir)
+        shutil.unpack_archive(self.download_path, self.opts.installs_dir)
 
     def run_snapshot(self):
         print('Running snapshot...')
-        child_dirs = list(self.mount_dir.iterdir())
+        child_dirs = list(self.opts.installs_dir.iterdir())
         assert len(child_dirs) == 1, 'Mixxx should be extracted to exactly one folder'
         mixxx_dir = child_dirs[0]
         run([str(mixxx_dir / 'bin' / 'mixxx')], opts=self.opts)
     
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')
-        for path in self.opts.mount_dir.iterdir():
+        for path in self.opts.installs_dir.iterdir():
             if path.is_file():
                 path.unlink()
             else:

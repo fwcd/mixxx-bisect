@@ -8,8 +8,7 @@ import shutil
 
 class WindowsSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):
-        self.mount_dir = opts.mount_dir
-        self.install_dir = opts.mount_dir / 'Mixxx'
+        self.install_dir = opts.installs_dir / 'Mixxx'
         self.opts = opts
     
     @property
@@ -26,7 +25,7 @@ class WindowsSnapshotRunner(SnapshotRunner):
             'msiexec',
             '/a', str(self.download_path),           # Install the msi
             '/q',                                    # Install quietly i.e. without GUI
-            f'TARGETDIR={self.opts.mount_dir}',                # Install to custom target dir
+            f'TARGETDIR={self.opts.installs_dir}',                # Install to custom target dir
             '/li', str(self.opts.log_dir / 'msi-install.log'), # Log installation to file
         ], opts=self.opts)
 
@@ -36,7 +35,7 @@ class WindowsSnapshotRunner(SnapshotRunner):
 
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')
-        for path in self.opts.mount_dir.iterdir():
+        for path in self.opts.installs_dir.iterdir():
             if path.is_file():
                 path.unlink()
             else:
