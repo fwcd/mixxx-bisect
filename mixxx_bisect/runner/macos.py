@@ -6,12 +6,16 @@ from mixxx_bisect.utils.run import run
 
 class MacOSSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):
-        self.mount_dir = opts.mount_dir
+        self.mount_dir = opts.installs_dir / 'mnt'
         self.opts = opts
+
+    @property
+    def suffix(self) -> str:
+        return '.dmg'
     
     @property
     def download_path(self) -> Path:
-        return self.opts.downloads_dir / 'mixxx-current.dmg'
+        return self.opts.downloads_dir / f'mixxx-current{self.suffix}'
     
     @property
     def cdr_path(self) -> Path:
@@ -19,6 +23,7 @@ class MacOSSnapshotRunner(SnapshotRunner):
 
     def _mount_snapshot(self):
         print('Mounting snapshot...')
+        self.mount_dir.mkdir(parents=True, exist_ok=True)
         self.cdr_path.unlink(missing_ok=True)
         run(['hdiutil', 'convert', str(self.download_path), '-format', 'UDTO', '-o', str(self.cdr_path)], opts=self.opts)
         run(['hdiutil', 'attach', str(self.cdr_path), '-mountpoint', str(self.mount_dir)], opts=self.opts)

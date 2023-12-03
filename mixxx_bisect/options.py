@@ -5,9 +5,10 @@ from pathlib import Path
 class Options:
     quiet: bool
     verbose: bool
+    os: str
     arch: str
     root_dir: Path
     mixxx_dir: Path
-    mount_dir: Path
+    installs_dir: Path
     log_dir: Path
     downloads_dir: Path

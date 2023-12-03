@@ -10,6 +10,11 @@ class SnapshotRunner(Protocol):
         pass
 
     @property
+    def suffix(self) -> str:
+        '''The file extension for the downloaded artifact.'''
+        raise NotImplementedError()
+
+    @property
     def download_path(self) -> Path:
         '''The path to download to.'''
         raise NotImplementedError()

@@ -25,7 +25,7 @@ class MixxxOrgSnapshotRepository(SnapshotRepository):
         }.get(opts.arch)
 
         if arch is None:
-            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the mixxx.org hoster.')
+            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the mixxx.org repository.')
 
         self.snapshot_name_patterns = [
             # New pattern, e.g. mixxx-2.4-alpha-6370-g44f29763ed-macosintel

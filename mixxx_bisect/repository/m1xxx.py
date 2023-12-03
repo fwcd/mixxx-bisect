@@ -1,5 +1,5 @@
 from typing import Optional, cast
-from mixxx_bisect.error import UnsupportedArchError
+from mixxx_bisect.error import UnsupportedArchError, UnsupportedOSError
 
 from mixxx_bisect.repository import SnapshotRepository
 from mixxx_bisect.options import Options
@@ -23,16 +23,24 @@ class M1xxxSnapshotRepository(SnapshotRepository):
         }.get(opts.arch)
 
         if arch is None:
-            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the m1xxx hoster.')
+            raise UnsupportedArchError(f'The architecture {opts.arch} is not supported by the m1xxx repository.')
+
+        os = {
+            'Darwin': 'osx',
+            'Linux': 'linux',
+        }.get(opts.os)
+
+        if os is None:
+            raise UnsupportedOSError(f'The os {opts.os} is not supported by the m1xxx repository.')
+        
+        # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
+        base_triplet_pattern = re.escape(arch) + r'-' + re.escape(os) + r'(?:-min\d+)?(?:-release)?'
 
         self.snapshot_name_patterns = [
-            # Newest pattern, e.g. mixxx-2.5.0.c46027.r2c2e706b44-arm64-osx-min1100-release
-            # TODO: Should we use the 'debugasserts' variant? Perhaps as an optional flag?
-            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + re.escape(arch) + r'-osx-min\d+-release$'),
-            # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100
-            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + re.escape(arch) + r'-osx-min\d+$'),
+            # Newer pattern, e.g. mixxx-2.5.0.c45818.r30bca40dad-arm64-osx-min1100-release
+            re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)-' + base_triplet_pattern + r'$'),
             # New pattern, e.g. mixxx-arm64-osx-min1100-2.5.0.c45818.r30bca40dad
-            re.compile(r'^mixxx-' + re.escape(arch) + r'-osx-min\d+-[\d\.]+\.c\d+\.r(\w+)$'),
+            re.compile(r'^mixxx-' + base_triplet_pattern + r'-[\d\.]+\.c\d+\.r(\w+)$'),
             # Old pattern, e.g. mixxx-2.5.0.c45816.r7c1bb1b997
             *([re.compile(r'^mixxx-[\d\.]+\.c\d+\.r(\w+)$')] if arch == 'arm64' else []),
         ]

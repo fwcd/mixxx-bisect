@@ -6,14 +6,13 @@ from mixxx_bisect.utils.run import run
 
 import shutil
 
-class WindowsSnapshotRunner(SnapshotRunner):
+class LinuxSnapshotRunner(SnapshotRunner):
     def __init__(self, opts: Options):
-        self.install_dir = opts.installs_dir / 'Mixxx'
         self.opts = opts
     
     @property
     def suffix(self) -> str:
-        return '.msi'
+        return '.tar.gz'
 
     @property
     def download_path(self) -> Path:
@@ -21,18 +20,15 @@ class WindowsSnapshotRunner(SnapshotRunner):
 
     def setup_snapshot(self):
         print('Extracting snapshot...')
-        run([
-            'msiexec',
-            '/a', str(self.download_path),           # Install the msi
-            '/q',                                    # Install quietly i.e. without GUI
-            f'TARGETDIR={self.opts.installs_dir}',                # Install to custom target dir
-            '/li', str(self.opts.log_dir / 'msi-install.log'), # Log installation to file
-        ], opts=self.opts)
+        shutil.unpack_archive(self.download_path, self.opts.installs_dir)
 
     def run_snapshot(self):
         print('Running snapshot...')
-        run([str(self.install_dir / 'mixxx.exe')], opts=self.opts)
-
+        child_dirs = list(self.opts.installs_dir.iterdir())
+        assert len(child_dirs) == 1, 'Mixxx should be extracted to exactly one folder'
+        mixxx_dir = child_dirs[0]
+        run([str(mixxx_dir / 'bin' / 'mixxx')], opts=self.opts)
+    
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')
         for path in self.opts.installs_dir.iterdir():
