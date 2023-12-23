@@ -3,16 +3,30 @@ name: Publish
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: ${{ steps.set_url.outputs.env_url }}
+
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
       with:
         python-version: '3.x'
+    - name: Check version
+      id: version
+      run: |
+        pkg_version="$(grep '^version =' pyproject.toml | sed 's/version = "\(.*\)"/\1/g')"
+        tag_version="$(echo "$GITHUB_REF" | sed -e "s#refs/tags/v##g")"
+        if [ "$pkg_version" != "$tag_version" ]; then
+          echo "Package version '$pkg_version' does not match tag version '$tag_version'!" >&2
+          exit 1
+        fi
+        echo "version=$tag_version" >> "$GITHUB_OUTPUT"
     - name: Install build module
       run: pip3 install build
     - name: Build distribution
@@ -22,3 +36,8 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
+    - name: Set environment url
+      id: set_url
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        echo "env_url=https://pypi.org/project/mixxx-bisect/$version" >> "$GITHUB_OUTPUT"
