@@ -7,6 +7,7 @@ class Options:
     verbose: bool
     os: str
     arch: str
+    mixxx_args: list[str]
     root_dir: Path
     mixxx_dir: Path
     installs_dir: Path

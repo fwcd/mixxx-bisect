@@ -31,7 +31,7 @@ class WindowsSnapshotRunner(SnapshotRunner):
 
     def run_snapshot(self):
         print('Running snapshot...')
-        run([str(self.install_dir / 'mixxx.exe')], opts=self.opts)
+        run([str(self.install_dir / 'mixxx.exe'), *self.opts.mixxx_args], opts=self.opts)
 
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')

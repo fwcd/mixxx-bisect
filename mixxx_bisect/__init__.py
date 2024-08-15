@@ -38,7 +38,7 @@ SNAPSHOT_REPOSITORIES: dict[str, type[SnapshotRepository]] = {
 def main():
     os = platform.system()
 
-    parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search')
+    parser = argparse.ArgumentParser(description='Finds Mixxx regressions using binary search', usage='mixxx-bisect [<options>] [[--] <mixxx args>]')
     parser.add_argument('--repository', default='m1xxx' if os == 'Linux' else 'mixxx-org', choices=sorted(SNAPSHOT_REPOSITORIES.keys()), help=f'The snapshot repository to use.')
     parser.add_argument('--branch', default='main', help=f'The branch to search for snapshots on, if supported by the repository.')
     parser.add_argument('--root', type=Path, default=DEFAULT_ROOT, help='The root directory where all application-specific state (i.e. the mixxx repo, downloads, installed snapshots etc.) will be stored.')
@@ -50,7 +50,10 @@ def main():
     parser.add_argument('-g', '--good', help='The lower bound of the commit range (a good commit)')
     parser.add_argument('-b', '--bad', help='The upper bound of the commit range (a bad commit)')
 
-    args = parser.parse_args()
+    args, extra_args = parser.parse_known_args()
+
+    if extra_args and extra_args[0] == '--':
+        extra_args.pop(0)
 
     if args.version:
         print(pkg_version())
@@ -68,6 +71,7 @@ def main():
             verbose=args.verbose,
             os=os,
             arch=args.arch,
+            mixxx_args=extra_args,
             root_dir=args.root,
             mixxx_dir=args.root / 'mixxx.git',
             installs_dir=args.root / 'installs',

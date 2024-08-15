@@ -42,7 +42,7 @@ class MacOSSnapshotRunner(SnapshotRunner):
 
     def run_snapshot(self):
         print('Running snapshot...')
-        run([str(self.mount_dir / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx')], opts=self.opts)
+        run([str(self.mount_dir / 'mixxx.app' / 'Contents' / 'MacOS' / 'mixxx'), *self.opts.mixxx_args], opts=self.opts)
     
     def cleanup_snapshot(self):
         self._unmount_snapshot()

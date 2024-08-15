@@ -27,7 +27,7 @@ class LinuxSnapshotRunner(SnapshotRunner):
         child_dirs = list(self.opts.installs_dir.iterdir())
         assert len(child_dirs) == 1, 'Mixxx should be extracted to exactly one folder'
         mixxx_dir = child_dirs[0]
-        run([str(mixxx_dir / 'bin' / 'mixxx')], opts=self.opts)
+        run([str(mixxx_dir / 'bin' / 'mixxx'), *self.opts.mixxx_args], opts=self.opts)
     
     def cleanup_snapshot(self):
         print('Cleaning up snapshot...')
