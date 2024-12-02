@@ -48,7 +48,12 @@ class M1xxxSnapshotRepository(SnapshotRepository):
     def fetch_snapshots(self) -> dict[str, str]:
         print(f'==> Fetching snapshots from {RELEASES_API_URL}...')
         # TODO: Proper paging over more than the latest 100 snapshots
-        releases = get(f'{RELEASES_API_URL}?per_page=100', json=True).json()
+        releases = []
+        page = 1
+        while (results := get(f'{RELEASES_API_URL}?per_page=100&page={page}', json=True).json()) and page <= 100 and isinstance(results, list):
+            print(f'Fetching page {page}...')
+            releases += results
+            page += 1
         urls = [
             asset['browser_download_url']
             for release in releases
